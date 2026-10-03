@@ -56,7 +56,15 @@
   button { font: inherit; color: inherit; }
   :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
-  .app { max-width: 1060px; margin: 0 auto; padding: 10px 16px 28px; }
+  .app { max-width: 1060px; margin: 0 auto; padding: 8px 16px 28px; }
+
+  /* Erster Bildschirm: Kopf, Blatt, Text, Zeitleiste, Gläser.
+     Das Blatt bekommt genau den Platz, der übrig bleibt. */
+  .screen {
+    display: flex; flex-direction: column;
+    min-height: calc(100vh - 8px);
+    min-height: calc(100svh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
 
   /* Kopfzeile */
   .top {
@@ -79,20 +87,29 @@
     border: 2px solid var(--ink); background: transparent; font-weight: 600; font-size: .9375rem;
   }
 
-  /* Hauptbereich */
-  .layout { display: grid; gap: 4px 44px; }
-  @media (min-width: 820px) {
-    .layout { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; margin-top: 8px; }
-    .stage { position: sticky; top: 12px; }
-  }
-
-  .stage { position: relative; width: min(100%, 60vh); aspect-ratio: 1 / 1; margin: 0 auto; }
-  .stage svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .stage { position: relative; flex: 1 1 0; min-height: 150px; width: 100%; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .side { flex: none; padding-bottom: 10px; }
   #leafShadow feDropShadow { flood-color: var(--leaf-shadow); flood-opacity: 1; }
-  .ground {
-    position: absolute; left: 0; right: 0; bottom: -4%; height: 26%;
-    background: radial-gradient(ellipse 48% 50% at 50% 62%, var(--ground) 0%, transparent 100%);
-    opacity: 0; pointer-events: none;
+  .g0 { stop-color: var(--ground); }
+  .g1 { stop-color: var(--ground); stop-opacity: 0; }
+
+  /* Breite Bildschirme im Querformat: Blatt links, Bedienung rechts */
+  @media (min-width: 820px) and (orientation: landscape) {
+    .app {
+      display: grid; column-gap: 44px; align-items: start;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      grid-template-areas: "head head" "stage side" "stage info" "stage foot";
+    }
+    .screen { display: contents; }
+    .top { grid-area: head; }
+    .stage {
+      grid-area: stage; position: sticky; top: 12px;
+      flex: none; min-height: 0; width: min(100%, 60vh); aspect-ratio: 1 / 1; margin: 8px auto 0;
+    }
+    .side { grid-area: side; margin-top: 8px; }
+    .info { grid-area: info; }
+    footer { grid-area: foot; }
   }
   .sway { transform-box: view-box; transform-origin: 500px 930px; }
   .playing .sway { animation: sway 3.4s ease-in-out infinite alternate; }
@@ -171,6 +188,57 @@
   .vial .sci { font-size: .75rem; color: var(--ink-soft); }
   @media (min-width: 820px) { .glass { height: 170px; } }
 
+  /* Tablet im Hochformat: eine Spalte, Bedienung mittig */
+  @media (min-width: 820px) and (orientation: portrait) {
+    .side, .info, footer { width: 100%; max-width: 640px; margin-left: auto; margin-right: auto; }
+    .vials { max-width: none; }
+  }
+
+  /* Handy und niedrige Bildschirme: alles kompakter */
+  @media (max-width: 819px), (max-height: 600px) {
+    .top { padding: 2px 0 4px; gap: 6px 10px; }
+    h1 { font-size: 1.125rem; }
+    .species button { min-height: 40px; padding: 4px 10px 4px 6px; font-size: .875rem; gap: 5px; }
+    .species button svg { width: 18px; height: 18px; }
+    .story { min-height: 7.3rem; padding-top: 2px; }
+    .story h2 { font-size: 1.375rem; margin-bottom: 2px; }
+    .story p { font-size: 1rem; line-height: 1.35; }
+    .timeline { margin: 4px 0 0; gap: 12px; }
+    .play { width: 48px; height: 48px; }
+    .play svg { width: 21px; height: 21px; }
+    .track { padding-bottom: 17px; }
+    .ends { font-size: .75rem; }
+    .lab { margin-top: 4px; }
+    .lab h2 { font-size: 1rem; }
+    .lab .hint { margin: 0 0 4px; font-size: .8125rem; }
+    .vials { max-width: none; gap: 4px; }
+    .vial { padding: 2px 0; gap: 0; }
+    .glass { width: 46px; height: clamp(64px, 13svh, 150px); border-radius: 4px 4px 23px 23px; }
+    .vial .name { margin-top: 4px; font-size: .875rem; }
+    .vial .sci { font-size: .6875rem; }
+    .info { margin-top: 20px; }
+  }
+  @media (max-width: 439px) {
+    .species button svg { display: none; }
+    .species button { padding: 4px 11px; }
+  }
+  @media (max-width: 379px) {
+    .app { padding-left: 12px; padding-right: 12px; }
+    .top { gap: 6px 8px; }
+    .species { gap: 5px; }
+    .species button { padding: 4px 9px; }
+  }
+  /* Sehr niedrige Bildschirme (kleine Handys, Querformat) */
+  @media (max-height: 600px) {
+    .app { padding-top: 4px; }
+    .stage { min-height: 120px; }
+    .side { margin-top: 0; }
+    .story { min-height: 6.9rem; }
+    .story h2 { font-size: 1.25rem; }
+    .glass { height: 56px; border-radius: 4px 4px 20px 20px; }
+    .glass::after { bottom: 16px; }
+  }
+
   /* Elterninfo */
   .info { margin-top: 28px; border-bottom: 2px solid var(--line); }
   .info details { border-top: 2px solid var(--line); padding-bottom: 6px; }
@@ -192,13 +260,13 @@
 </head>
 <body>
 <div class="app">
+  <main class="screen">
   <header class="top">
     <h1>Herbstfarben</h1>
     <div class="species" id="species" role="group" aria-label="Blattart wählen"></div>
     <button class="install" id="installBtn" hidden>App installieren</button>
   </header>
 
-  <main class="layout">
     <div class="stage" id="stage">
       <svg id="leafSvg" viewBox="-30 -20 1060 1060" role="img" aria-labelledby="leafTitle">
         <title id="leafTitle">Ahornblatt</title>
@@ -215,7 +283,12 @@
           <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
             <feDropShadow dx="0" dy="30" stdDeviation="20"/>
           </filter>
+          <radialGradient id="groundGrad">
+            <stop class="g0" offset="0"/>
+            <stop class="g1" offset="1"/>
+          </radialGradient>
         </defs>
+        <ellipse id="ground" cx="500" cy="962" rx="500" ry="66" fill="url(#groundGrad)" opacity="0"/>
         <g id="fall">
           <g class="sway">
             <path id="blade" fill="url(#leafGrad)" filter="url(#leafShadow)"/>
@@ -224,7 +297,6 @@
           </g>
         </g>
       </svg>
-      <div class="ground" id="ground"></div>
     </div>
 
     <div class="side">
@@ -250,6 +322,8 @@
         <p class="hint">Zieh die Gläser hoch oder runter und mische selbst.</p>
         <div class="vials" id="vials"></div>
       </section>
+    </div>
+  </main>
 
       <div class="info">
       <details id="eltern">
@@ -294,12 +368,10 @@
       </div>
 
       <footer>
-        <span class="who">Für die Kindergruppe Berglfüchse. Version 1.0</span>
+        <span class="who">Für die Kindergruppe Berglfüchse. Version 1.1</span>
         <a href="#impressum" data-open>Impressum</a>
         <a href="#datenschutz" data-open>Datenschutz</a>
       </footer>
-    </div>
-  </main>
 </div>
 
 <script>
