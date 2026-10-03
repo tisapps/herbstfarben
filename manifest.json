@@ -1,0 +1,17 @@
+{
+  "name": "Herbstfarben",
+  "short_name": "Herbstfarben",
+  "description": "Warum werden Blätter im Herbst bunt? Farbstoffe mischen und den Herbst ablaufen lassen.",
+  "lang": "de",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dce6ea",
+  "theme_color": "#cbd8dd",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
