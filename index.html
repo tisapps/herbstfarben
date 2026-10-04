@@ -31,9 +31,11 @@
 
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; background: var(--sky); }
+  /* --vz: Ausgleichsfaktor, wenn der Browser die Seite in Desktop-Breite anlegt (siehe Skript).
+     Normal 1. Alle Höhen, die sich auf den Bildschirm beziehen, werden dadurch geteilt. */
   body {
     margin: 0;
-    min-height: 100vh;
+    min-height: calc(100vh / var(--vz, 1));
     color: var(--ink);
     background: var(--sky) linear-gradient(180deg, var(--sky-high) 0, var(--sky) 520px) no-repeat;
     font: 400 17px/1.45 ui-rounded, "SF Pro Rounded", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -48,8 +50,8 @@
      Das Blatt bekommt genau den Platz, der übrig bleibt. */
   .screen {
     display: flex; flex-direction: column;
-    min-height: calc(100vh - 8px);
-    min-height: calc(100svh - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: calc(100vh / var(--vz, 1) - 8px);
+    min-height: calc(100svh / var(--vz, 1) - 8px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   /* Kopfzeile */
@@ -91,7 +93,7 @@
     .top { grid-area: head; }
     .stage {
       grid-area: stage; position: sticky; top: 12px;
-      flex: none; min-height: 0; width: min(100%, 60vh); aspect-ratio: 1 / 1; margin: 8px auto 0;
+      flex: none; min-height: 0; width: min(100%, calc(60vh / var(--vz, 1))); aspect-ratio: 1 / 1; margin: 8px auto 0;
     }
     .side { grid-area: side; margin-top: 8px; }
     .info { grid-area: info; }
@@ -200,7 +202,7 @@
     .lab .hint { margin: 0 0 4px; font-size: .8125rem; }
     .vials { max-width: none; gap: 4px; }
     .vial { padding: 2px 0; gap: 0; }
-    .glass { width: 46px; height: clamp(64px, 13svh, 150px); border-radius: 4px 4px 23px 23px; }
+    .glass { width: 46px; height: clamp(64px, calc(13svh / var(--vz, 1)), 150px); border-radius: 4px 4px 23px 23px; }
     .vial .name { margin-top: 4px; font-size: .875rem; }
     .vial .sci { font-size: .6875rem; }
     .info { margin-top: 20px; }
@@ -239,11 +241,14 @@
   footer { margin-top: 14px; font-size: .8125rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 4px 18px; }
   footer a { color: inherit; text-underline-offset: 2px; }
   footer .who { flex-basis: 100%; }
+  /* Versionsnummer antippen zeigt Technik-Angaben (für die Fehlersuche) */
+  footer .ver { border: 0; padding: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+  footer .tech { flex-basis: 100%; font-variant-numeric: tabular-nums; }
 
   /* Eine Spalte (Handy, Tablet hoch): Gläser direkt unter Blatt und Zeitleiste.
      Wird es eng, rutscht nur der Erklärtext nach unten, nie die Gläser. */
   @media not all and (min-width: 820px) and (orientation: landscape) {
-    .stage { min-height: 110px; min-height: max(110px, 28svh); }
+    .stage { min-height: 110px; min-height: max(110px, calc(28svh / var(--vz, 1))); }
     .side { display: flex; flex-direction: column; }
     .timeline { order: 1; margin-top: 2px; }
     .lab { order: 2; margin-top: 2px; }
@@ -378,7 +383,8 @@
       </div>
 
       <footer>
-        <span class="who">Für die Kindergruppe Berglfüchse. Version 1.3</span>
+        <span class="who">Für die Kindergruppe Berglfüchse. <button type="button" class="ver" id="verBtn" aria-expanded="false" aria-controls="tech">Version 1.4</button></span>
+        <span class="tech" id="tech" hidden></span>
         <a href="#impressum" data-open>Impressum</a>
         <a href="#datenschutz" data-open>Datenschutz</a>
       </footer>
@@ -659,6 +665,69 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
+// ---------- Desktop-Breite ausgleichen ----------
+// Ist in Chrome „Desktop-Website" eingeschaltet (das gilt dann auch für die installierte App),
+// legt der Browser die Seite rund 980 px breit an, obwohl das Handy nur etwa 400 px breit ist.
+// Alles wäre dann winzig. In diesem Fall vergrößert die App sich selbst um genau den
+// Unterschied und schaltet die Layout-Regeln so, als liefe sie in normaler Handybreite.
+const root = document.documentElement;
+let zoomK = 1;
+
+// Media-Regeln, die nur von Breite, Höhe oder Ausrichtung abhängen, mit Originaltext merken
+function matchSize(text, w, h) {
+  return text.split(',').some(part => {
+    let q = part.trim(), neg = false;
+    if (q.startsWith('not all and ')) { neg = true; q = q.slice(12); }
+    const ok = q.split(/\s+and\s+/).every(f => {
+      const m = f.match(/^\((min|max)-(width|height):\s*([\d.]+)px\)$/);
+      if (m) { const v = m[2] === 'width' ? w : h; return m[1] === 'min' ? v >= +m[3] : v <= +m[3]; }
+      const o = f.match(/^\(orientation:\s*(portrait|landscape)\)$/);
+      if (o) return (o[1] === 'portrait') === (h >= w);
+      throw new Error('keine Größenabfrage');
+    });
+    return neg ? !ok : ok;
+  });
+}
+const sizeRules = [];
+try {
+  for (const r of document.styleSheets[0].cssRules) {
+    if (!(r instanceof CSSMediaRule)) continue;
+    const text = r.media.mediaText;
+    try { matchSize(text, 400, 800); sizeRules.push({ r, text }); } catch (err) { /* z. B. reduced-motion */ }
+  }
+} catch (err) { /* Stylesheet nicht lesbar: dann ohne Umschalten der Regeln */ }
+
+function fitViewport() {
+  const portrait = innerHeight >= innerWidth;
+  const sw = portrait ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+  const k = sw > 0 && matchMedia('(pointer: coarse)').matches ? innerWidth / sw : 1;
+  zoomK = k >= 1.25 ? k : 1;
+  if (zoomK === 1) {
+    root.style.removeProperty('zoom');
+    root.style.removeProperty('--vz');
+    sizeRules.forEach(s => { if (s.r.media.mediaText !== s.text) s.r.media.mediaText = s.text; });
+    return;
+  }
+  root.style.zoom = zoomK;
+  root.style.setProperty('--vz', zoomK);
+  const w = innerWidth / zoomK, h = innerHeight / zoomK;
+  sizeRules.forEach(s => { s.r.media.mediaText = matchSize(s.text, w, h) ? 'all' : 'not all'; });
+}
+
+// Versionsnummer antippen: Technik-Angaben ein- und ausblenden
+const verBtn = $('verBtn'), tech = $('tech');
+const num = v => v.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+verBtn.addEventListener('click', () => {
+  const show = tech.hidden;
+  tech.hidden = !show;
+  verBtn.setAttribute('aria-expanded', String(show));
+  if (!show) return;
+  const mode = matchMedia('(display-mode: standalone)').matches ? 'installiert' : 'im Browser';
+  tech.textContent = `Fenster ${innerWidth} × ${innerHeight} · Bildschirm ${screen.width} × ${screen.height}`
+    + ` · Pixel ${num(devicePixelRatio)} · Ausgleich ${num(zoomK)} · ${mode}`
+    + ` · Schrift ${getComputedStyle(document.body).fontSize}`;
+});
+
 // ---------- Erklärtext: feste Rahmenhöhe, passende Schriftgröße ----------
 // Gesucht wird die größte Schrift, bei der JEDER Erklärtext in den Rahmen passt.
 // So ändert sich beim Wechsel der Phase weder die Rahmenhöhe noch die Schriftgröße.
@@ -696,7 +765,10 @@ function fitStoryText() {
   phaseText.style.lineHeight = (size * ratio) + 'px';
 }
 let fitRaf = 0;
-const refit = () => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitStoryText); };
+const refit = () => {
+  cancelAnimationFrame(fitRaf);
+  fitRaf = requestAnimationFrame(() => { fitViewport(); fitStoryText(); });
+};
 window.addEventListener('resize', refit);
 window.addEventListener('orientationchange', refit);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
@@ -718,6 +790,7 @@ document.querySelectorAll('a[data-open]').forEach(a => a.addEventListener('click
 if (location.hash) openSection(location.hash.slice(1));
 window.addEventListener('hashchange', () => openSection(location.hash.slice(1)));
 
+fitViewport();
 setSpecies();
 render();
 fitStoryText();
