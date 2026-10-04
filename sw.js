@@ -1,6 +1,6 @@
 // Herbstfarben – Service Worker: sorgt dafür, dass die App auch ohne Internet startet.
 // Wer Bilder oder das Manifest ändert, erhöht hier die Versionsnummer (v1 -> v2).
-const VERSION = 'herbstfarben-v1';
+const VERSION = 'herbstfarben-v2';
 const FILES = [
   './index.html',
   './manifest.json',
@@ -12,7 +12,9 @@ const FILES = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(VERSION).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting())
+    caches.open(VERSION)
+      .then(cache => cache.addAll(FILES.map(f => new Request(f, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -45,7 +47,8 @@ self.addEventListener('fetch', event => {
 async function openPage(req, url) {
   const cache = await caches.open(VERSION);
   const isApp = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
-  const network = fetch(req).then(res => {
+  // Bei der App selbst am Zwischenspeicher vorbei fragen, damit Updates sofort ankommen
+  const network = (isApp ? fetch(url.origin + url.pathname, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req)).then(res => {
     if (res.ok && isApp) cache.put('./index.html', res.clone());
     return res;
   });

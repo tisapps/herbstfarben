@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Herbstfarben</title>
 <meta name="description" content="Warum werden Blätter im Herbst bunt? Farbstoffe mischen und den Herbst ablaufen lassen.">
-<meta name="theme-color" content="#cbd8dd" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1d2b36" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#cbd8dd">
+<meta name="color-scheme" content="only light">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -26,21 +26,7 @@
     --ground: #8b6a48;
     --thumb: #ffffff;
     --leaf-shadow: rgba(32, 52, 46, .3);
-    color-scheme: light dark;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --sky: #16212a;
-      --sky-high: #1d2b36;
-      --ink: #e3ecee;
-      --ink-soft: #a6b6bc;
-      --line: #42596a;
-      --glass: rgba(255, 255, 255, .08);
-      --glass-edge: rgba(227, 236, 238, .35);
-      --ground: #6a5038;
-      --thumb: #e3ecee;
-      --leaf-shadow: rgba(0, 0, 0, .45);
-    }
+    color-scheme: only light;
   }
 
   * { box-sizing: border-box; }
@@ -116,8 +102,9 @@
   @keyframes sway { from { transform: rotate(-2.2deg); } to { transform: rotate(2.2deg); } }
 
   /* Phase + Erklärung */
-  .story { min-height: 8.4em; padding-top: 4px; }
-  .story h2 { margin: 0 0 4px; font-size: 1.75rem; line-height: 1.15; font-weight: 750; letter-spacing: -.015em; }
+  /* Fester Rahmen: Höhe hängt nie vom Text ab. Die Schriftgröße passt das Skript an. */
+  .story { height: 8.7rem; padding-top: 4px; overflow: hidden; flex: none; }
+  .story h2 { margin: 0 0 4px; font-size: 1.75rem; line-height: 1.15; font-weight: 750; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .story p { margin: 0; max-width: 34em; color: var(--ink); }
 
   /* Zeitleiste */
@@ -200,7 +187,7 @@
     h1 { font-size: 1.125rem; }
     .species button { min-height: 40px; padding: 4px 10px 4px 6px; font-size: .875rem; gap: 5px; }
     .species button svg { width: 18px; height: 18px; }
-    .story { min-height: 7.3rem; padding-top: 2px; }
+    .story { height: 7.25rem; padding-top: 2px; }
     .story h2 { font-size: 1.375rem; margin-bottom: 2px; }
     .story p { font-size: 1rem; line-height: 1.35; }
     .timeline { margin: 4px 0 0; gap: 12px; }
@@ -233,7 +220,7 @@
     .app { padding-top: 4px; }
     .stage { min-height: 120px; }
     .side { margin-top: 0; }
-    .story { min-height: 6.9rem; }
+    .story { height: 7.1rem; }
     .story h2 { font-size: 1.25rem; }
     .glass { height: 56px; border-radius: 4px 4px 20px 20px; }
     .glass::after { bottom: 16px; }
@@ -252,6 +239,29 @@
   footer { margin-top: 14px; font-size: .8125rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 4px 18px; }
   footer a { color: inherit; text-underline-offset: 2px; }
   footer .who { flex-basis: 100%; }
+
+  /* Eine Spalte (Handy, Tablet hoch): Gläser direkt unter Blatt und Zeitleiste.
+     Wird es eng, rutscht nur der Erklärtext nach unten, nie die Gläser. */
+  @media not all and (min-width: 820px) and (orientation: landscape) {
+    .stage { min-height: 110px; min-height: max(110px, 28svh); }
+    .side { display: flex; flex-direction: column; }
+    .timeline { order: 1; margin-top: 2px; }
+    .lab { order: 2; margin-top: 2px; }
+    .story { order: 3; margin-top: 6px; }
+  }
+  /* Sehr schmal (kleines Handy mit großer Schrift) */
+  @media (max-width: 319px) {
+    .vials { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .glass { width: 38px; }
+    .vial .name { font-size: .8125rem; }
+    .vial .sci { display: none; }
+    .species button { padding: 4px 7px; font-size: .8125rem; }
+    h1 { font-size: 1rem; }
+  }
+  @media (max-height: 460px) and (max-width: 819px) {
+    .lab .hint { display: none; }
+    .glass { height: 48px; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .playing .sway { animation: none; }
@@ -368,7 +378,7 @@
       </div>
 
       <footer>
-        <span class="who">Für die Kindergruppe Berglfüchse. Version 1.1</span>
+        <span class="who">Für die Kindergruppe Berglfüchse. Version 1.3</span>
         <a href="#impressum" data-open>Impressum</a>
         <a href="#datenschutz" data-open>Datenschutz</a>
       </footer>
@@ -405,7 +415,7 @@ const SPECIES = {
     label: 'Ahorn', title: 'Ahornblatt',
     values: [[100,80,0,0],[95,80,0,0],[70,78,5,0],[35,76,20,0],[12,74,50,0],[4,70,75,5],[0,62,80,15],[0,35,40,70]],
     texts: {
-      4: 'Der Ahorn bildet jetzt einen neuen, roten Farbstoff. Er schützt das Blatt wie Sonnencreme, solange der Baum noch Nährstoffe herausholt.',
+      4: 'Der Ahorn bildet jetzt neuen, roten Farbstoff. Er schützt das Blatt wie Sonnencreme, während der Baum Nährstoffe herausholt.',
       5: 'Gelb und Rot mischen sich zu leuchtendem Orangerot. Jetzt ist der Ahorn am buntesten.'
     }
   },
@@ -415,7 +425,7 @@ const SPECIES = {
     texts: {
       4: 'Die Buche leuchtet gelb-orange. Roten Farbstoff bildet sie nur wenig.',
       5: 'Im Blatt sterben Zellen ab. Dabei entstehen braune Stoffe, und die Buche wird kupferbraun.',
-      6: 'Zwischen Zweig und Stiel wächst eine Trennschicht, dann fällt das Blatt. Junge Buchen halten ihr trockenes Laub aber oft bis zum Frühling fest.'
+      6: 'Eine Trennschicht löst das Blatt vom Zweig. Junge Buchen halten ihr trockenes Laub aber oft bis zum Frühling fest.'
     }
   },
   birke: {
@@ -649,6 +659,48 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
+// ---------- Erklärtext: feste Rahmenhöhe, passende Schriftgröße ----------
+// Gesucht wird die größte Schrift, bei der JEDER Erklärtext in den Rahmen passt.
+// So ändert sich beim Wechsel der Phase weder die Rahmenhöhe noch die Schriftgröße.
+const storyEl = document.querySelector('.story');
+const ALL_TEXTS = [...new Set([MANUAL_TEXT, ...TEXTS,
+  ...Object.values(SPECIES).flatMap(sp => Object.values(sp.texts))].filter(Boolean))];
+let measurer = null;
+function fitStoryText() {
+  phaseText.style.fontSize = '';
+  phaseText.style.lineHeight = '';
+  const cs = getComputedStyle(phaseText);
+  const base = parseFloat(cs.fontSize);
+  const ratio = parseFloat(cs.lineHeight) / base || 1.4;
+  const avail = storyEl.clientHeight - parseFloat(getComputedStyle(storyEl).paddingTop)
+    - phaseName.offsetHeight - parseFloat(getComputedStyle(phaseName).marginBottom);
+  if (!measurer) {
+    measurer = document.createElement('p');
+    measurer.setAttribute('aria-hidden', 'true');
+    measurer.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;margin:0;padding:0;';
+    document.body.appendChild(measurer);
+  }
+  measurer.style.width = phaseText.clientWidth + 'px';
+  measurer.style.fontFamily = cs.fontFamily;
+  measurer.style.fontWeight = cs.fontWeight;
+  measurer.style.letterSpacing = cs.letterSpacing;
+  const fits = size => {
+    measurer.style.fontSize = size + 'px';
+    measurer.style.lineHeight = (size * ratio) + 'px';
+    return ALL_TEXTS.every(t => { measurer.textContent = t; return measurer.offsetHeight <= avail + 0.5; });
+  };
+  let size = base;
+  const min = Math.max(11, base * 0.7);
+  while (size > min && !fits(size)) size -= 0.25;
+  phaseText.style.fontSize = size + 'px';
+  phaseText.style.lineHeight = (size * ratio) + 'px';
+}
+let fitRaf = 0;
+const refit = () => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitStoryText); };
+window.addEventListener('resize', refit);
+window.addEventListener('orientationchange', refit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+
 // Fußzeilen-Links: Abschnitt aufklappen und hinscrollen
 function openSection(id) {
   const d = document.getElementById(id);
@@ -668,6 +720,7 @@ window.addEventListener('hashchange', () => openSection(location.hash.slice(1)))
 
 setSpecies();
 render();
+fitStoryText();
 </script>
 </body>
 </html>
